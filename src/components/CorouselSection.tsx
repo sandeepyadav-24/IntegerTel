@@ -1,37 +1,59 @@
-import { useRef, useEffect, useState } from "react";
+import { useRef, useEffect, useState, useCallback } from "react";
 import { motion } from "framer-motion";
 
-// ── Replace just the carousel section in your ChooseInteger component ──
+const getVisibleCount = () => {
+  if (typeof window === "undefined") return 3;
+  if (window.innerWidth < 640)  return 1; // mobile
+  if (window.innerWidth < 1024) return 2; // tablet
+  return 3;                               // desktop
+};
 
 const CarouselSection = ({ cards }: { cards: any[] }) => {
-  const trackRef = useRef<HTMLDivElement>(null);
-  const [cardWidth, setCardWidth] = useState(360);
+  const trackRef    = useRef<HTMLDivElement>(null);
+  const [cardWidth, setCardWidth]    = useState(360);
+  const [visibleCount, setVisible]   = useState(3);
+  const [index, setIndex]            = useState(0);
   const gap = 20;
-  const visibleCount = 3;
 
-  const [index, setIndex] = useState(0);
-  const maxIndex = cards.length - visibleCount;
+  const maxIndex = Math.max(0, cards.length - visibleCount);
 
-  // Measure container and set card width to exactly fill 3 slots
+  const measure = useCallback(() => {
+    const v = getVisibleCount();
+    setVisible(v);
+    if (trackRef.current) {
+      const containerWidth = trackRef.current.offsetWidth;
+      const computed = (containerWidth - gap * (v - 1)) / v;
+      setCardWidth(computed);
+    }
+  }, []);
+
   useEffect(() => {
-    const measure = () => {
-      if (trackRef.current) {
-        const containerWidth = trackRef.current.offsetWidth;
-        // card = (container - 2 gaps) / 3 cards
-        const computed = (containerWidth - gap * (visibleCount - 1)) / visibleCount;
-        setCardWidth(computed);
-      }
-    };
     measure();
     window.addEventListener("resize", measure);
     return () => window.removeEventListener("resize", measure);
-  }, []);
+  }, [measure]);
+
+  // Clamp index if visible count changes (e.g. on resize)
+  useEffect(() => {
+    setIndex((i) => Math.min(i, Math.max(0, cards.length - visibleCount)));
+  }, [visibleCount, cards.length]);
 
   const prev = () => setIndex((i) => Math.max(0, i - 1));
   const next = () => setIndex((i) => Math.min(maxIndex, i + 1));
 
-  // Slide amount = (cardWidth + gap) * index
   const translateX = index * (cardWidth + gap);
+
+  // ── Touch swipe support ──────────────────────────────────────────
+  const touchStart = useRef(0);
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    touchStart.current = e.touches[0].clientX;
+  };
+  const onTouchEnd = (e: React.TouchEvent) => {
+    const delta = touchStart.current - e.changedTouches[0].clientX;
+    if (delta > 40)  next();
+    if (delta < -40) prev();
+  };
 
   return (
     <div className="relative w-full max-w-6xl mt-16 px-10">
@@ -47,8 +69,13 @@ const CarouselSection = ({ cards }: { cards: any[] }) => {
         </svg>
       </button>
 
-      {/* Overflow clip track */}
-      <div ref={trackRef} className="overflow-hidden w-full">
+      {/* Track */}
+      <div
+        ref={trackRef}
+        className="overflow-hidden w-full"
+        onTouchStart={onTouchStart}
+        onTouchEnd={onTouchEnd}
+      >
         <motion.div
           className="flex"
           style={{ gap: `${gap}px` }}
@@ -58,7 +85,6 @@ const CarouselSection = ({ cards }: { cards: any[] }) => {
           {cards.map((card) => (
             <div
               key={card.title}
-              // Exact measured width — never shrinks or grows
               style={{ minWidth: cardWidth, maxWidth: cardWidth }}
               className="bg-white/70 backdrop-blur-sm border border-blue-100 rounded-3xl p-8 flex flex-col gap-5 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300"
             >
