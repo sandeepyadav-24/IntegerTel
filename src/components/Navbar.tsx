@@ -58,13 +58,8 @@ const Navbar = () => {
 
             {/* ── Logo ── */}
             <Link to="#" className="flex items-center gap-2.5 shrink-0">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center shadow-md shadow-blue-500/20">
-                <svg viewBox="0 0 24 24" fill="none" className="w-5 h-5 text-white">
-                  <path
-                    d="M12 2L4 6v5c0 4.97 3.47 9.63 8 10.93C16.53 20.63 20 15.97 20 11V6l-8-4z"
-                    stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-                  />
-                </svg>
+              <div className="w-9 h-9 rounded-xl  flex items-center justify-center shadow-md shadow-blue-500/20">
+                <img src="/logo.png" alt="Logo" className="w-5 h-5" />
               </div>
               <div className="leading-none">
                 <span className="text-slate-900 font-extrabold text-[15px] tracking-tight block">
